@@ -1,3 +1,15 @@
+module "context" {
+  source  = "drape-io/context/null"
+  version = "0.0.7"
+  # We override the max_id_length to guarantee to that we aren't larger than
+  # available s3 bucket limits.
+  context = merge(
+    var.context, {
+      max_id_length = 63
+    }
+  )
+}
+
 resource "aws_s3_bucket" "default" {
   count = local.enabled ? 1 : 0
   bucket = substr(format("%s-tfstate", module.context.id_truncated_hash), 0, 63)
