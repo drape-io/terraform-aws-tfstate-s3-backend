@@ -18,8 +18,15 @@ module "tfstate-backend" {
       "Owner" : "group-sre@test.com"
     }
   }
+  providers = {
+    aws.secondary = aws
+  }
 }
 ```
+
+*NOTE*: The `providers` block is required.  This is because if in the future you
+would like to use replication to another region we need you to pass in the
+provider.
 
 It will generate an s3 bucket `drape-dev-tfstate`. We use the [context](https://github.com/drape-io/terraform-null-context)
 to manage the tagging and naming of resources.   If you need to generate a more
@@ -43,6 +50,9 @@ module "primary-tfstate-backend" {
   context = merge(local.context, {
     attributes = ["primary"]
   })
+  providers = {
+    aws.secondary = aws
+  }
 }
 module "secondary-tfstate-backend" {
   source  = "drape-io/tfstate-s3-backend/aws"
@@ -50,6 +60,9 @@ module "secondary-tfstate-backend" {
   context = merge(local.context, {
     attributes = ["secondary"]
   })
+  providers = {
+    aws.secondary = aws
+  }
 }
 ```
 
@@ -77,6 +90,9 @@ module "primary-tfstate-backend" {
   context = merge(local.context, {
     attributes = ["primary"]
   })
+  providers = {
+    aws.secondary = aws
+  }
 }
 ```
 
@@ -88,3 +104,28 @@ tf apply -target module.full.aws_s3_bucket.default
 ```
 
 Then you can proceed to run `tf destroy`.
+
+# Replication
+We support cross-region replication for additional disaster recovery by doing
+the following:
+
+1. Define your secondary provider:
+
+```hcl
+provider "aws" {
+  alias   = "secondary"
+  region  = "us-west-2"
+}
+```
+
+2. Then pass it in to the module:
+```hcl
+module "primary-tfstate-backend" {
+  source  = "drape-io/tfstate-s3-backend/aws"
+  version = "0.0.1"
+  context = local.context
+  providers = {
+    aws.secondary = aws.west
+  }
+}
+```

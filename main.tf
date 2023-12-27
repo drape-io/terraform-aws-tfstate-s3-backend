@@ -26,4 +26,8 @@ module "secondary_s3" {
             attributes = concat(local.context.attributes, ["2"])
         }
     )
+
+    providers = {
+        aws = aws.secondary
+    }
 }
