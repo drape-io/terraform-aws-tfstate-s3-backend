@@ -21,9 +21,3 @@ variable "force_destroy" {
   description = "Allow the S3 bucket to be destroyed. By default we do not want to allow this"
   default     = false
 }
-
-variable "enable_replication" {
-  type        = bool
-  description = "This enables bi-directional replication between two regions"
-  default     = false
-}

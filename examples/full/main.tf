@@ -14,6 +14,7 @@ module "full" {
   source        = "../../"
   context       = local.context
   force_destroy = true
+  enable_replication = true
 }
 
 module "secondary" {

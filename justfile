@@ -33,3 +33,10 @@ apply-remote:
 destroy-remote:
     terraform -chdir=./examples/remote init
     terraform -chdir=./examples/remote apply
+
+# Run the tests
+test:
+    terraform -chdir=./modules/s3 init
+    terraform -chdir=./modules/s3 test
+    terraform init
+    terraform test

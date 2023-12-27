@@ -11,3 +11,19 @@ module "context" {
     }
   )
 }
+
+module "primary_s3" {
+    source = "./modules/s3"
+    context = module.context.context
+}
+
+module "secondary_s3" {
+    count = var.enable_replication ? 1 : 0
+    source = "./modules/s3"
+    context = merge(
+        local.context,
+        {
+            attributes = concat(local.context.attributes, ["2"])
+        }
+    )
+}

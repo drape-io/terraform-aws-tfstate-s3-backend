@@ -1,5 +1,9 @@
 output "primary_s3_bucket" {
-  value = local.enabled ? one(aws_s3_bucket.default[*]).id : ""
+  value = local.enabled ? module.primary_s3.bucket : ""
+}
+
+output "primary_s3_arn" {
+  value = local.enabled ? module.primary_s3.arn : ""
 }
 
 output "dynamo_table" {
