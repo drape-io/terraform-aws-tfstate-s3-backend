@@ -32,7 +32,7 @@ apply-remote:
 # Destroy the example that uses the remote backend
 destroy-remote:
     terraform -chdir=./examples/remote init
-    terraform -chdir=./examples/remote apply
+    terraform -chdir=./examples/remote destroy
 
 # Run the tests
 test:
