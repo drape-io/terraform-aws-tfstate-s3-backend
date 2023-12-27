@@ -1,10 +1,9 @@
 locals {
   context = {
-    group         = "drape"
-    tenant        = "customer1"
-    scope         = "k8s"
-    env           = "dev"
-    max_id_length = 63
+    group   = "drape"
+    tenant  = "customer1"
+    scope   = "k8s"
+    env     = "dev"
     tags = {
       "Owner" : "group-sre@test.com"
     }
@@ -12,12 +11,14 @@ locals {
 }
 
 module "full" {
-  source  = "../../"
-  context = local.context
+  source        = "../../"
+  context       = local.context
+  force_destroy = true
 }
 
 module "secondary" {
-  source = "../../"
+  source        = "../../"
+  force_destroy = true
   context = merge(
     local.context,
     {

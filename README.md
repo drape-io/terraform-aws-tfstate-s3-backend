@@ -57,3 +57,34 @@ Which will create two buckets:
 
 - drape-dev-primary-tfstate
 - drape-dev-secondary-tfstate
+
+# Destroying
+If you try to teardown a module that uses this you will get the error:
+
+```
+│ Error: deleting Amazon S3 (Simple Storage) Bucket (drape-customer1-dev-k8s-tfstate): BucketNotEmpty: The bucket you tried to delete is not empty. You must delete all versions in the bucket.
+│ 	status code: 409, request id: ec63f05f-f745-4c17-8159-0bc9fc0e1d08, host id: s9lzHYrFp76ZVxRcpX9+5cjAnEH2ROuNkd2BHfIa6UkFVdtjf5mKR3/eTPFvsiP/XV/VLi31234=
+```
+
+This is because we protect you from deleting state on accident.  To fix this you
+need to set the variable `force_destroy=True`, so:
+
+```hcl
+module "primary-tfstate-backend" {
+  source  = "drape-io/tfstate-s3-backend/aws"
+  version = "0.0.1"
+  force_destroy = True
+  context = merge(local.context, {
+    attributes = ["primary"]
+  })
+}
+```
+
+then you need to apply before running the destroy.  You can use a target apply
+if you've already destroyed some things:
+
+```bash
+tf apply -target module.full.aws_s3_bucket.default
+```
+
+Then you can proceed to run `tf destroy`.

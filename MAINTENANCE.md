@@ -6,10 +6,6 @@ git push origin v0.0.1
 ```
 
 # Development
-## Unit Testing
-
-
-## Integration Testing
 We've included a `docker-compose.yml` file that will spin up LocalStack(https://www.localstack.cloud/)
 and allow you to target that.
 
@@ -24,6 +20,13 @@ Then run docker:
 ```bash
 docker compose up
 ```
+
+## Unit Testing
+```bash
+tf test
+```
+
+## Integration Testing
 
 You can verify everything is working with:
 
