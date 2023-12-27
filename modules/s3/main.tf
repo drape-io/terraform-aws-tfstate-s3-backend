@@ -58,19 +58,19 @@ resource "aws_s3_bucket_lifecycle_configuration" "default" {
 
     # Transition old versions to Infrequent Access
     noncurrent_version_transition {
-      noncurrent_days = 15
+      noncurrent_days = 30
       storage_class   = "STANDARD_IA"
     }
 
     # Transition old versions to Glacier 
     noncurrent_version_transition {
-      noncurrent_days = 30
+      noncurrent_days = 60
       storage_class   = "GLACIER"
     }
 
     # Expire (delete) old versions.
     noncurrent_version_expiration {
-      noncurrent_days = 45
+      noncurrent_days = 90
     }
 
 
