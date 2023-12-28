@@ -15,6 +15,9 @@ module "full" {
   context       = local.context
   force_destroy = true
   enable_replication = true
+  providers = {
+    aws.secondary = aws.secondary
+  }
 }
 
 module "secondary" {
@@ -26,4 +29,7 @@ module "secondary" {
       env = "prd"
     }
   )
+  providers = {
+    aws.secondary = aws.secondary
+  }
 }
