@@ -24,6 +24,6 @@ variable "force_destroy" {
 
 variable "enable_replication" {
   type        = bool
-  description = "This enables bi-directional replication between two regions"
+  description = "This enables replication to a secondary region"
   default     = false
 }
