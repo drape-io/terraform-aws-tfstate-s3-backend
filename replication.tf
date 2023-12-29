@@ -1,6 +1,6 @@
 module "replication-context" {
   source  = "drape-io/context/null"
-  version = "0.0.7"
+  version = "0.0.8"
   context = merge(
     local.context,
     {
