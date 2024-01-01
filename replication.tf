@@ -1,4 +1,5 @@
 module "replication-context" {
+  count   = local.enabled && var.enable_replication ? 1 : 0
   source  = "drape-io/context/null"
   version = "0.0.8"
   context = merge(
