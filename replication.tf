@@ -11,7 +11,7 @@ module "replication-context" {
 }
 
 locals {
-  repl-ctx = module.replication-context
+  repl-ctx = local.enabled && var.enable_replication ? module.replication-context[0] : null
 }
 
 resource "aws_iam_role" "replication" {
