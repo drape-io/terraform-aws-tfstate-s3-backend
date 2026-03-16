@@ -1,35 +1,24 @@
-module "context" {
-  source  = "drape-io/context/null"
-  version = "~> 0.0.8"
-  # We override the max_id_length to guarantee to that we aren't larger than
-  # available s3 bucket limits.
-  context = merge(
-    var.context, {
-      max_id_length = 63
-    }
-  )
-}
-
 resource "aws_s3_bucket" "default" {
-  count = local.enabled ? 1 : 0
-  bucket = substr(format("%s-tfstate", module.context.id_truncated_hash), 0, 63)
+  count         = local.enabled ? 1 : 0
+  bucket        = substr(format("%s-%s", var.id, var.state_suffix), 0, 63)
   force_destroy = var.force_destroy
-  tags = module.context.tags
+  tags          = var.tags
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "default" {
-  count = local.enabled ? 1 : 0
+  count  = local.enabled ? 1 : 0
   bucket = aws_s3_bucket.default[0].id
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      sse_algorithm     = var.sse_algorithm
+      kms_master_key_id = var.kms_key_id
     }
   }
 }
 
 resource "aws_s3_bucket_versioning" "default" {
-  count = local.enabled ? 1 : 0
+  count  = local.enabled ? 1 : 0
   bucket = aws_s3_bucket.default[0].id
 
   versioning_configuration {
@@ -39,7 +28,7 @@ resource "aws_s3_bucket_versioning" "default" {
 
 # https://docs.aws.amazon.com/AmazonS3/latest/userguide/security-best-practices.html
 resource "aws_s3_bucket_public_access_block" "default" {
-  count = local.enabled ? 1 : 0
+  count                   = local.enabled ? 1 : 0
   bucket                  = aws_s3_bucket.default[0].id
   block_public_acls       = true
   ignore_public_acls      = true
@@ -48,7 +37,7 @@ resource "aws_s3_bucket_public_access_block" "default" {
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "default" {
-  count    = local.enabled ? 1 : 0
+  count      = local.enabled && var.enable_lifecycle_rules ? 1 : 0
   depends_on = [aws_s3_bucket_versioning.default]
 
   bucket = aws_s3_bucket.default[0].id
@@ -62,7 +51,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "default" {
       storage_class   = "STANDARD_IA"
     }
 
-    # Transition old versions to Glacier 
+    # Transition old versions to Glacier
     noncurrent_version_transition {
       noncurrent_days = 60
       storage_class   = "GLACIER"
@@ -72,7 +61,6 @@ resource "aws_s3_bucket_lifecycle_configuration" "default" {
     noncurrent_version_expiration {
       noncurrent_days = 90
     }
-
 
     status = "Enabled"
   }

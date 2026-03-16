@@ -1,16 +1,16 @@
 # drape-io/tfstate-s3-backend/aws
 ## Overview
-Terrafor module for provisioning an S3 bucket for the terraform remote state
+Terraform module for provisioning an S3 bucket for the terraform remote state
 backend with proper security and locking configured.
-drape-io/context/null.
 
+Uses [drape-io/context/null](https://github.com/drape-io/terraform-null-context)
+for consistent tagging and naming of resources.
 
 You can use it like this:
 
 ```hcl
 module "tfstate-backend" {
   source  = "drape-io/tfstate-s3-backend/aws"
-  version = "0.0.1"
   context = {
     group = "drape"
     env    = "dev"
@@ -31,7 +31,6 @@ provider.
 It will generate an s3 bucket `drape-dev-tfstate`. We use the [context](https://github.com/drape-io/terraform-null-context)
 to manage the tagging and naming of resources.   If you need to generate a more
 unique name for the bucket you can use a combination of the fields in the
-
 context. For example, to create two state buckets in the same environment:
 
 ```hcl
@@ -46,7 +45,6 @@ locals {
 }
 module "primary-tfstate-backend" {
   source  = "drape-io/tfstate-s3-backend/aws"
-  version = "0.0.1"
   context = merge(local.context, {
     attributes = ["primary"]
   })
@@ -56,7 +54,6 @@ module "primary-tfstate-backend" {
 }
 module "secondary-tfstate-backend" {
   source  = "drape-io/tfstate-s3-backend/aws"
-  version = "0.0.1"
   context = merge(local.context, {
     attributes = ["secondary"]
   })
@@ -71,6 +68,37 @@ Which will create two buckets:
 - drape-dev-primary-tfstate
 - drape-dev-secondary-tfstate
 
+## Encryption
+
+By default, S3 buckets are encrypted with AWS KMS (`aws:kms`). You can
+customize the encryption:
+
+```hcl
+module "tfstate-backend" {
+  source  = "drape-io/tfstate-s3-backend/aws"
+  context = local.context
+
+  # Use a custom KMS key
+  kms_key_id = aws_kms_key.my_key.arn
+
+  # Or use S3-managed keys instead of KMS
+  # sse_algorithm = "AES256"
+
+  providers = {
+    aws.secondary = aws
+  }
+}
+```
+
+## Deletion Protection
+
+The DynamoDB lock table has deletion protection enabled by default. This
+prevents accidental deletion of the lock table which would break all terraform
+runs using this backend.
+
+When `force_destroy = true` is set, deletion protection is disabled to allow
+teardown of the entire backend.
+
 # Destroying
 If you try to teardown a module that uses this you will get the error:
 
@@ -80,30 +108,24 @@ If you try to teardown a module that uses this you will get the error:
 ```
 
 This is because we protect you from deleting state on accident.  To fix this you
-need to set the variable `force_destroy=True`, so:
+need to set the variable `force_destroy = true`, then apply before running
+destroy:
 
 ```hcl
 module "primary-tfstate-backend" {
   source  = "drape-io/tfstate-s3-backend/aws"
-  version = "0.0.1"
-  force_destroy = True
-  context = merge(local.context, {
-    attributes = ["primary"]
-  })
+  force_destroy = true
+  context = local.context
   providers = {
     aws.secondary = aws
   }
 }
 ```
 
-then you need to apply before running the destroy.  You can use a target apply
-if you've already destroyed some things:
-
 ```bash
-tf apply -target module.full.aws_s3_bucket.default
+terraform apply
+terraform destroy
 ```
-
-Then you can proceed to run `tf destroy`.
 
 # Replication
 We support cross-region replication for additional disaster recovery by doing
@@ -122,11 +144,10 @@ provider "aws" {
 ```hcl
 module "primary-tfstate-backend" {
   source  = "drape-io/tfstate-s3-backend/aws"
-  version = "0.0.1"
   context = local.context
-  enabled_replication = true
+  enable_replication = true
   providers = {
-    aws.secondary = aws.west
+    aws.secondary = aws.secondary
   }
 }
 ```
@@ -135,15 +156,20 @@ module "primary-tfstate-backend" {
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_context"></a> [context](#input\_context) | Used to pass an object of any of the variables used to this module.  It is<br>used to seed the module with labels from another context. | <pre>object({<br>    enabled    = optional(bool)<br>    group      = optional(string)<br>    tenant     = optional(string)<br>    env        = optional(string)<br>    scope      = optional(string)<br>    attributes = optional(list(string))<br>    tags       = optional(map(string))<br>  })</pre> | n/a | yes |
-| <a name="input_enable_replication"></a> [enable\_replication](#input\_enable\_replication) | This enables replication to a secondary region | `bool` | `false` | no |
-| <a name="input_force_destroy"></a> [force\_destroy](#input\_force\_destroy) | Allow the S3 bucket to be destroyed. By default we do not want to allow this | `bool` | `false` | no |
+| context | Used to pass an object of any of the variables used to this module. It is used to seed the module with labels from another context. | `object({...})` | n/a | yes |
+| enable_replication | This enables replication to a secondary region | `bool` | `false` | no |
+| force_destroy | Allow the S3 bucket to be destroyed. By default we do not want to allow this | `bool` | `false` | no |
+| sse_algorithm | Server-side encryption algorithm for S3. Use `aws:kms` for KMS or `AES256` for S3-managed keys | `string` | `"aws:kms"` | no |
+| kms_key_id | KMS key ARN for S3 encryption. If null, the default aws/s3 KMS key is used when sse_algorithm is aws:kms | `string` | `null` | no |
+| enable_lifecycle_rules | Whether to enable the default S3 lifecycle rules for noncurrent version tiering and cleanup | `bool` | `true` | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| <a name="output_dynamo_table"></a> [dynamo\_table](#output\_dynamo\_table) | n/a |
-| <a name="output_enabled"></a> [enabled](#output\_enabled) | If it was enabled or not |
-| <a name="output_primary_s3_arn"></a> [primary\_s3\_arn](#output\_primary\_s3\_arn) | n/a |
-| <a name="output_primary_s3_bucket"></a> [primary\_s3\_bucket](#output\_primary\_s3\_bucket) | n/a |
+| primary_s3_bucket | The name of the primary S3 bucket for storing Terraform state |
+| primary_s3_arn | The ARN of the primary S3 bucket |
+| secondary_s3_bucket | The name of the secondary (replica) S3 bucket, empty if replication is disabled |
+| secondary_s3_arn | The ARN of the secondary (replica) S3 bucket, empty if replication is disabled |
+| dynamo_table | The name of the DynamoDB table used for state locking |
+| enabled | Whether the module is enabled |

@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Init (s3 module)
+        run: terraform -chdir=modules/s3 init -backend=false
+
+      - name: Terraform Validate (s3 module)
+        run: terraform -chdir=modules/s3 validate
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    services:
+      localstack:
+        image: localstack/localstack:4
+        ports:
+          - 4566:4566
+        env:
+          SERVICES: iam,kms,sqs,s3,dynamodb
+    env:
+      AWS_ACCESS_KEY_ID: dev-tfstate-backend
+      AWS_SECRET_ACCESS_KEY: dev-tfstate-backend
+      AWS_DEFAULT_REGION: us-east-1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Test S3 Module
+        run: |
+          terraform -chdir=modules/s3 init
+          terraform -chdir=modules/s3 test
+
+      - name: Test Root Module
+        run: |
+          terraform init
+          terraform test

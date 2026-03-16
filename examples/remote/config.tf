@@ -22,13 +22,14 @@ terraform {
     bucket                      = "drape-customer1-dev-k8s-tfstate"
     key                         = "app1"
     region                      = "us-east-1"
-    endpoint                    = "http://localhost:4566"
-    dynamodb_table              = "drape-customer1-dev-k8s-tfstate"
+    use_path_style              = true
     skip_credentials_validation = true
     skip_metadata_api_check     = true
     skip_requesting_account_id  = true
 
-    force_path_style  = true
-    dynamodb_endpoint = "http://localhost:4566"
+    endpoints = {
+      s3       = "http://localhost:4566"
+      dynamodb = "http://localhost:4566"
+    }
   }
 }

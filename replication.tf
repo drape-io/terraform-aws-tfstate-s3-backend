@@ -14,70 +14,68 @@ locals {
   repl-ctx = local.enabled && var.enable_replication ? module.replication-context[0] : null
 }
 
+data "aws_iam_policy_document" "replication_assume_role" {
+  count = local.enabled && var.enable_replication ? 1 : 0
+
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["s3.${data.aws_partition.current.dns_suffix}"]
+    }
+  }
+}
+
 resource "aws_iam_role" "replication" {
   count              = local.enabled && var.enable_replication ? 1 : 0
   name               = local.repl-ctx.id_truncated_hash
-  assume_role_policy = <<POLICY
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "Service": "s3.amazonaws.com"
-      },
-      "Effect": "Allow",
-      "Sid": ""
-    }
-  ]
+  assume_role_policy = data.aws_iam_policy_document.replication_assume_role[0].json
+  tags               = local.repl-ctx.tags
 }
-POLICY
+
+data "aws_iam_policy_document" "replication" {
+  count = local.enabled && var.enable_replication ? 1 : 0
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:GetReplicationConfiguration",
+      "s3:ListBucket",
+    ]
+    resources = [module.primary_s3.arn]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:GetObjectVersion",
+      "s3:GetObjectVersionAcl",
+    ]
+    resources = ["${module.primary_s3.arn}/*"]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:ReplicateObject",
+      "s3:ReplicateDelete",
+    ]
+    resources = ["${module.secondary_s3[0].arn}/*"]
+  }
 }
 
 resource "aws_iam_policy" "replication" {
   count  = local.enabled && var.enable_replication ? 1 : 0
   name   = local.repl-ctx.id_full
-  policy = <<POLICY
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": [
-        "s3:GetReplicationConfiguration",
-        "s3:ListBucket"
-      ],
-      "Effect": "Allow",
-      "Resource": [
-        "${module.primary_s3.arn}"
-      ]
-    },
-    {
-      "Action": [
-        "s3:GetObjectVersion",
-        "s3:GetObjectVersionAcl"
-      ],
-      "Effect": "Allow",
-      "Resource": [
-        "${module.primary_s3.arn}/*"
-      ]
-    },
-    {
-      "Action": [
-        "s3:ReplicateObject",
-        "s3:ReplicateDelete"
-      ],
-      "Effect": "Allow",
-      "Resource": "${module.secondary_s3[0].arn}/*"
-    }
-  ]
-}
-POLICY
+  policy = data.aws_iam_policy_document.replication[0].json
+  tags   = local.repl-ctx.tags
 }
 
-resource "aws_iam_policy_attachment" "replication" {
+resource "aws_iam_role_policy_attachment" "replication" {
   count      = local.enabled && var.enable_replication ? 1 : 0
-  name       = local.repl-ctx.id_full
-  roles      = ["${aws_iam_role.replication[0].name}"]
+  role       = aws_iam_role.replication[0].name
   policy_arn = aws_iam_policy.replication[0].arn
 }
 

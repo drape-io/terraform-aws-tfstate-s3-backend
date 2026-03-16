@@ -1,3 +1,3 @@
 locals {
-    enabled = module.context.context.enabled
+  enabled = var.enabled
 }
