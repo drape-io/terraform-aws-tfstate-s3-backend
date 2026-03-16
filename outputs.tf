@@ -27,3 +27,8 @@ output "enabled" {
   description = "Whether the module is enabled"
   value       = local.enabled
 }
+
+output "backend_config" {
+  description = "A generated Terraform backend configuration block that can be copy/pasted into your root module"
+  value       = local.backend_config
+}

@@ -3,6 +3,10 @@ set dotenv-load
 help:
   @just --list
 
+# Generate README with terraform-docs
+readme:
+    terraform-docs markdown table --output-file README.md --output-mode inject .
+
 # Format all terraform files
 fmt:
     terraform fmt -recursive

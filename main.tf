@@ -1,4 +1,5 @@
 data "aws_partition" "current" {}
+data "aws_region" "current" {}
 
 module "context" {
   source  = "drape-io/context/null"

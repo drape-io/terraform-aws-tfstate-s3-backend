@@ -113,6 +113,16 @@ run "test_apply_finishes" {
     condition     = output.enabled == true
     error_message = "enabled output should be true"
   }
+
+  assert {
+    condition     = output.backend_config != ""
+    error_message = "backend_config output should not be empty"
+  }
+
+  assert {
+    condition     = strcontains(output.backend_config, "drape-dev-tfstate")
+    error_message = "backend_config should contain the bucket name"
+  }
 }
 
 run "test_replication_disabled_no_iam" {
