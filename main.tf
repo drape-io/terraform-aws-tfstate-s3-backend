@@ -26,27 +26,27 @@ module "secondary_context" {
 }
 
 module "primary_s3" {
-  source               = "./modules/s3"
-  enabled              = local.enabled
-  id                   = module.context.id_truncated_hash
-  tags                 = module.context.tags
-  state_suffix         = local.state_suffix
-  force_destroy        = var.force_destroy
-  sse_algorithm        = var.sse_algorithm
-  kms_key_id           = var.kms_key_id
+  source                 = "./modules/s3"
+  enabled                = local.enabled
+  id                     = module.context.id_truncated_hash
+  tags                   = module.context.tags
+  state_suffix           = local.state_suffix
+  force_destroy          = var.force_destroy
+  sse_algorithm          = var.sse_algorithm
+  kms_key_id             = var.kms_key_id
   enable_lifecycle_rules = var.enable_lifecycle_rules
 }
 
 module "secondary_s3" {
-  count                = local.enabled && var.enable_replication ? 1 : 0
-  source               = "./modules/s3"
-  enabled              = local.enabled
-  id                   = module.secondary_context[0].id_truncated_hash
-  tags                 = module.secondary_context[0].tags
-  state_suffix         = local.state_suffix
-  force_destroy        = var.force_destroy
-  sse_algorithm        = var.sse_algorithm
-  kms_key_id           = var.kms_key_id
+  count                  = local.enabled && var.enable_replication ? 1 : 0
+  source                 = "./modules/s3"
+  enabled                = local.enabled
+  id                     = module.secondary_context[0].id_truncated_hash
+  tags                   = module.secondary_context[0].tags
+  state_suffix           = local.state_suffix
+  force_destroy          = var.force_destroy
+  sse_algorithm          = var.sse_algorithm
+  kms_key_id             = var.kms_key_id
   enable_lifecycle_rules = var.enable_lifecycle_rules
 
   providers = {

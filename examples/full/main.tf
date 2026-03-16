@@ -1,9 +1,9 @@
 locals {
   context = {
-    group   = "drape"
-    tenant  = "customer1"
-    scope   = "k8s"
-    env     = "dev"
+    group  = "drape"
+    tenant = "customer1"
+    scope  = "k8s"
+    env    = "dev"
     tags = {
       "Owner" : "group-sre@test.com"
     }
@@ -11,9 +11,9 @@ locals {
 }
 
 module "full" {
-  source        = "../../"
-  context       = local.context
-  force_destroy = true
+  source             = "../../"
+  context            = local.context
+  force_destroy      = true
   enable_replication = true
   providers = {
     aws.secondary = aws.secondary

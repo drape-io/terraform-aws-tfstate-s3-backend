@@ -67,7 +67,7 @@ run "test_s3_encryption" {
   }
 
   assert {
-    condition     = aws_s3_bucket_server_side_encryption_configuration.default[0].rule[0].apply_server_side_encryption_by_default[0].sse_algorithm == "aws:kms"
+    condition     = one(one(aws_s3_bucket_server_side_encryption_configuration.default[0].rule).apply_server_side_encryption_by_default).sse_algorithm == "aws:kms"
     error_message = "S3 bucket should default to KMS encryption"
   }
 }
@@ -79,7 +79,7 @@ run "test_s3_encryption_custom" {
   }
 
   assert {
-    condition     = aws_s3_bucket_server_side_encryption_configuration.default[0].rule[0].apply_server_side_encryption_by_default[0].sse_algorithm == "AES256"
+    condition     = one(one(aws_s3_bucket_server_side_encryption_configuration.default[0].rule).apply_server_side_encryption_by_default).sse_algorithm == "AES256"
     error_message = "S3 bucket should allow AES256 encryption override"
   }
 }
