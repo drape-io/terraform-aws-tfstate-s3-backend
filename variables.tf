@@ -27,3 +27,21 @@ variable "enable_replication" {
   description = "This enables replication to a secondary region"
   default     = false
 }
+
+variable "sse_algorithm" {
+  type        = string
+  description = "Server-side encryption algorithm for S3. Use 'aws:kms' for KMS or 'AES256' for S3-managed keys"
+  default     = "aws:kms"
+}
+
+variable "kms_key_id" {
+  type        = string
+  description = "KMS key ARN for S3 encryption. If null, the default aws/s3 KMS key is used when sse_algorithm is aws:kms"
+  default     = null
+}
+
+variable "enable_lifecycle_rules" {
+  type        = bool
+  description = "Whether to enable the default S3 lifecycle rules for noncurrent version tiering and cleanup"
+  default     = true
+}

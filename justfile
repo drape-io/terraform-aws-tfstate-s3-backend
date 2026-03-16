@@ -3,6 +3,36 @@ set dotenv-load
 help:
   @just --list
 
+# Format all terraform files
+fmt:
+    terraform fmt -recursive
+
+# Format check (CI mode, no writes)
+fmt-check:
+    terraform fmt -check -recursive
+
+# Validate root and submodules
+validate:
+    terraform init -backend=false
+    terraform validate
+    terraform -chdir=modules/s3 init -backend=false
+    terraform -chdir=modules/s3 validate
+
+# Run the tests (requires LocalStack running)
+test:
+    terraform -chdir=./modules/s3 init
+    terraform -chdir=./modules/s3 test
+    terraform init
+    terraform test
+
+# Start LocalStack
+localstack-up:
+    docker compose up -d
+
+# Stop LocalStack
+localstack-down:
+    docker compose down
+
 # List the s3 buckets
 list-s3:
     aws s3 ls --endpoint-url=http://localhost:4566
@@ -10,10 +40,6 @@ list-s3:
 # List the dynamo tables
 list-dynamo:
     aws dynamodb list-tables --endpoint-url=http://localhost:4566
-
-# List the SQS tables
-list-sqs:
-    aws sqs list-queues --endpoint-url=http://localhost:4566
 
 # Apply the full example to generate two backends
 apply-example:
@@ -33,10 +59,3 @@ apply-remote:
 destroy-remote:
     terraform -chdir=./examples/remote init
     terraform -chdir=./examples/remote destroy
-
-# Run the tests
-test:
-    terraform -chdir=./modules/s3 init
-    terraform -chdir=./modules/s3 test
-    terraform init
-    terraform test
