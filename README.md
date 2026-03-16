@@ -10,7 +10,7 @@ You can use it like this:
 
 ```hcl
 module "tfstate-backend" {
-  source  = "drape-io/tfstate-s3-backend/aws"
+  source  = "github.com/drape-io/terraform-aws-tfstate-s3-backend"
   context = {
     group = "drape"
     env    = "dev"
@@ -44,7 +44,7 @@ locals {
   }
 }
 module "primary-tfstate-backend" {
-  source  = "drape-io/tfstate-s3-backend/aws"
+  source  = "github.com/drape-io/terraform-aws-tfstate-s3-backend"
   context = merge(local.context, {
     attributes = ["primary"]
   })
@@ -53,7 +53,7 @@ module "primary-tfstate-backend" {
   }
 }
 module "secondary-tfstate-backend" {
-  source  = "drape-io/tfstate-s3-backend/aws"
+  source  = "github.com/drape-io/terraform-aws-tfstate-s3-backend"
   context = merge(local.context, {
     attributes = ["secondary"]
   })
@@ -75,7 +75,7 @@ customize the encryption:
 
 ```hcl
 module "tfstate-backend" {
-  source  = "drape-io/tfstate-s3-backend/aws"
+  source  = "github.com/drape-io/terraform-aws-tfstate-s3-backend"
   context = local.context
 
   # Use a custom KMS key
@@ -113,7 +113,7 @@ destroy:
 
 ```hcl
 module "primary-tfstate-backend" {
-  source  = "drape-io/tfstate-s3-backend/aws"
+  source  = "github.com/drape-io/terraform-aws-tfstate-s3-backend"
   force_destroy = true
   context = local.context
   providers = {
@@ -143,7 +143,7 @@ provider "aws" {
 2. Then pass it in to the module:
 ```hcl
 module "primary-tfstate-backend" {
-  source  = "drape-io/tfstate-s3-backend/aws"
+  source  = "github.com/drape-io/terraform-aws-tfstate-s3-backend"
   context = local.context
   enable_replication = true
   providers = {
@@ -152,24 +152,64 @@ module "primary-tfstate-backend" {
 }
 ```
 
+<!-- BEGIN_TF_DOCS -->
+## Requirements
+
+| Name | Version |
+|------|---------|
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.6.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.0.0 |
+
+## Providers
+
+| Name | Version |
+|------|---------|
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.0.0 |
+
+## Modules
+
+| Name | Source | Version |
+|------|--------|---------|
+| <a name="module_context"></a> [context](#module\_context) | drape-io/context/null | ~> 0.0.8 |
+| <a name="module_primary_s3"></a> [primary\_s3](#module\_primary\_s3) | ./modules/s3 | n/a |
+| <a name="module_replication-context"></a> [replication-context](#module\_replication-context) | drape-io/context/null | ~> 0.0.8 |
+| <a name="module_secondary_context"></a> [secondary\_context](#module\_secondary\_context) | drape-io/context/null | ~> 0.0.8 |
+| <a name="module_secondary_s3"></a> [secondary\_s3](#module\_secondary\_s3) | ./modules/s3 | n/a |
+
+## Resources
+
+| Name | Type |
+|------|------|
+| [aws_dynamodb_table.default](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dynamodb_table) | resource |
+| [aws_iam_policy.replication](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
+| [aws_iam_role.replication](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role_policy_attachment.replication](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_s3_bucket_replication_configuration.replication](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_replication_configuration) | resource |
+| [aws_iam_policy_document.replication](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [aws_iam_policy_document.replication_assume_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [aws_partition.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/partition) | data source |
+| [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
+
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| context | Used to pass an object of any of the variables used to this module. It is used to seed the module with labels from another context. | `object({...})` | n/a | yes |
-| enable_replication | This enables replication to a secondary region | `bool` | `false` | no |
-| force_destroy | Allow the S3 bucket to be destroyed. By default we do not want to allow this | `bool` | `false` | no |
-| sse_algorithm | Server-side encryption algorithm for S3. Use `aws:kms` for KMS or `AES256` for S3-managed keys | `string` | `"aws:kms"` | no |
-| kms_key_id | KMS key ARN for S3 encryption. If null, the default aws/s3 KMS key is used when sse_algorithm is aws:kms | `string` | `null` | no |
-| enable_lifecycle_rules | Whether to enable the default S3 lifecycle rules for noncurrent version tiering and cleanup | `bool` | `true` | no |
+| <a name="input_context"></a> [context](#input\_context) | Used to pass an object of any of the variables used to this module.  It is<br>used to seed the module with labels from another context. | <pre>object({<br>    enabled    = optional(bool)<br>    group      = optional(string)<br>    tenant     = optional(string)<br>    env        = optional(string)<br>    scope      = optional(string)<br>    attributes = optional(list(string))<br>    tags       = optional(map(string))<br>  })</pre> | n/a | yes |
+| <a name="input_enable_lifecycle_rules"></a> [enable\_lifecycle\_rules](#input\_enable\_lifecycle\_rules) | Whether to enable the default S3 lifecycle rules for noncurrent version tiering and cleanup | `bool` | `true` | no |
+| <a name="input_enable_replication"></a> [enable\_replication](#input\_enable\_replication) | This enables replication to a secondary region | `bool` | `false` | no |
+| <a name="input_force_destroy"></a> [force\_destroy](#input\_force\_destroy) | Allow the S3 bucket to be destroyed. By default we do not want to allow this | `bool` | `false` | no |
+| <a name="input_kms_key_id"></a> [kms\_key\_id](#input\_kms\_key\_id) | KMS key ARN for S3 encryption. If null, the default aws/s3 KMS key is used when sse\_algorithm is aws:kms | `string` | `null` | no |
+| <a name="input_sse_algorithm"></a> [sse\_algorithm](#input\_sse\_algorithm) | Server-side encryption algorithm for S3. Use 'aws:kms' for KMS or 'AES256' for S3-managed keys | `string` | `"aws:kms"` | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| primary_s3_bucket | The name of the primary S3 bucket for storing Terraform state |
-| primary_s3_arn | The ARN of the primary S3 bucket |
-| secondary_s3_bucket | The name of the secondary (replica) S3 bucket, empty if replication is disabled |
-| secondary_s3_arn | The ARN of the secondary (replica) S3 bucket, empty if replication is disabled |
-| dynamo_table | The name of the DynamoDB table used for state locking |
-| enabled | Whether the module is enabled |
+| <a name="output_backend_config"></a> [backend\_config](#output\_backend\_config) | A generated Terraform backend configuration block that can be copy/pasted into your root module |
+| <a name="output_dynamo_table"></a> [dynamo\_table](#output\_dynamo\_table) | The name of the DynamoDB table used for state locking |
+| <a name="output_enabled"></a> [enabled](#output\_enabled) | Whether the module is enabled |
+| <a name="output_primary_s3_arn"></a> [primary\_s3\_arn](#output\_primary\_s3\_arn) | The ARN of the primary S3 bucket |
+| <a name="output_primary_s3_bucket"></a> [primary\_s3\_bucket](#output\_primary\_s3\_bucket) | The name of the primary S3 bucket for storing Terraform state |
+| <a name="output_secondary_s3_arn"></a> [secondary\_s3\_arn](#output\_secondary\_s3\_arn) | The ARN of the secondary (replica) S3 bucket, empty if replication is disabled |
+| <a name="output_secondary_s3_bucket"></a> [secondary\_s3\_bucket](#output\_secondary\_s3\_bucket) | The name of the secondary (replica) S3 bucket, empty if replication is disabled |
+<!-- END_TF_DOCS -->
