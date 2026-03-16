@@ -22,14 +22,14 @@ jobs:
 
       - name: Terraform Init
         run: |
-          printf 'provider "aws" {\nregion = "us-east-1"\nskip_credentials_validation = true\nskip_metadata_api_check = true\nskip_requesting_account_id = true\n}\nprovider "aws" {\nalias = "secondary"\nregion = "us-west-2"\nskip_credentials_validation = true\nskip_metadata_api_check = true\nskip_requesting_account_id = true\n}\n' > ci_override.tf
+          printf 'provider "aws" {\nregion = "us-east-1"\nskip_credentials_validation = true\nskip_metadata_api_check = true\nskip_requesting_account_id = true\n}\nprovider "aws" {\nalias = "secondary"\nregion = "us-west-2"\nskip_credentials_validation = true\nskip_metadata_api_check = true\nskip_requesting_account_id = true\n}\n' > ci_providers.tf
           terraform init -backend=false
 
       - name: Terraform Validate
         run: terraform validate
 
       - name: Cleanup CI override
-        run: rm -f ci_override.tf
+        run: rm -f ci_providers.tf
 
       - name: Terraform Init (s3 module)
         run: terraform -chdir=modules/s3 init -backend=false
