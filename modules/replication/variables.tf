@@ -1,5 +1,3 @@
-# This was copied from `drape-io/terraform-null-context` since it'll be passed
-# along to it.
 variable "context" {
   type = object({
     enabled    = optional(bool)
@@ -16,9 +14,19 @@ variable "context" {
   EOT
 }
 
+variable "primary_bucket_name" {
+  type        = string
+  description = "The name of the primary S3 bucket to replicate from"
+}
+
+variable "primary_bucket_arn" {
+  type        = string
+  description = "The ARN of the primary S3 bucket to replicate from"
+}
+
 variable "force_destroy" {
   type        = bool
-  description = "Allow the S3 bucket to be destroyed. By default we do not want to allow this"
+  description = "Allow the S3 bucket to be destroyed"
   default     = false
 }
 

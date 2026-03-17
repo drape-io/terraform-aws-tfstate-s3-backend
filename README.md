@@ -18,15 +18,8 @@ module "tfstate-backend" {
       "Owner" : "group-sre@test.com"
     }
   }
-  providers = {
-    aws.secondary = aws
-  }
 }
 ```
-
-*NOTE*: The `providers` block is required.  This is because if in the future you
-would like to use replication to another region we need you to pass in the
-provider.
 
 It will generate an s3 bucket `drape-dev-tfstate`. We use the [context](https://github.com/drape-io/terraform-null-context)
 to manage the tagging and naming of resources.   If you need to generate a more
@@ -48,18 +41,12 @@ module "primary-tfstate-backend" {
   context = merge(local.context, {
     attributes = ["primary"]
   })
-  providers = {
-    aws.secondary = aws
-  }
 }
 module "secondary-tfstate-backend" {
   source  = "github.com/drape-io/terraform-aws-tfstate-s3-backend"
   context = merge(local.context, {
     attributes = ["secondary"]
   })
-  providers = {
-    aws.secondary = aws
-  }
 }
 ```
 
@@ -83,10 +70,6 @@ module "tfstate-backend" {
 
   # Or use S3-managed keys instead of KMS
   # sse_algorithm = "AES256"
-
-  providers = {
-    aws.secondary = aws
-  }
 }
 ```
 
@@ -116,9 +99,6 @@ module "primary-tfstate-backend" {
   source  = "github.com/drape-io/terraform-aws-tfstate-s3-backend"
   force_destroy = true
   context = local.context
-  providers = {
-    aws.secondary = aws
-  }
 }
 ```
 
@@ -128,8 +108,9 @@ terraform destroy
 ```
 
 # Replication
-We support cross-region replication for additional disaster recovery by doing
-the following:
+We support cross-region replication for additional disaster recovery via the
+`modules/replication` submodule. This keeps the root module simple — no
+secondary provider is required unless you actually want replication.
 
 1. Define your secondary provider:
 
@@ -140,13 +121,23 @@ provider "aws" {
 }
 ```
 
-2. Then pass it in to the module:
+2. Create the primary backend as usual:
 ```hcl
-module "primary-tfstate-backend" {
+module "tfstate-backend" {
   source  = "github.com/drape-io/terraform-aws-tfstate-s3-backend"
   context = local.context
-  enable_replication = true
+}
+```
+
+3. Then add replication by calling the submodule:
+```hcl
+module "tfstate-replication" {
+  source              = "github.com/drape-io/terraform-aws-tfstate-s3-backend//modules/replication"
+  context             = local.context
+  primary_bucket_name = module.tfstate-backend.primary_s3_bucket
+  primary_bucket_arn  = module.tfstate-backend.primary_s3_arn
   providers = {
+    aws           = aws
     aws.secondary = aws.secondary
   }
 }
@@ -172,22 +163,12 @@ module "primary-tfstate-backend" {
 |------|--------|---------|
 | <a name="module_context"></a> [context](#module\_context) | drape-io/context/null | ~> 0.0.8 |
 | <a name="module_primary_s3"></a> [primary\_s3](#module\_primary\_s3) | ./modules/s3 | n/a |
-| <a name="module_replication-context"></a> [replication-context](#module\_replication-context) | drape-io/context/null | ~> 0.0.8 |
-| <a name="module_secondary_context"></a> [secondary\_context](#module\_secondary\_context) | drape-io/context/null | ~> 0.0.8 |
-| <a name="module_secondary_s3"></a> [secondary\_s3](#module\_secondary\_s3) | ./modules/s3 | n/a |
 
 ## Resources
 
 | Name | Type |
 |------|------|
 | [aws_dynamodb_table.default](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dynamodb_table) | resource |
-| [aws_iam_policy.replication](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
-| [aws_iam_role.replication](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role_policy_attachment.replication](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
-| [aws_s3_bucket_replication_configuration.replication](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_replication_configuration) | resource |
-| [aws_iam_policy_document.replication](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_iam_policy_document.replication_assume_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_partition.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/partition) | data source |
 | [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 
 ## Inputs
@@ -196,7 +177,6 @@ module "primary-tfstate-backend" {
 |------|-------------|------|---------|:--------:|
 | <a name="input_context"></a> [context](#input\_context) | Used to pass an object of any of the variables used to this module.  It is<br>used to seed the module with labels from another context. | <pre>object({<br>    enabled    = optional(bool)<br>    group      = optional(string)<br>    tenant     = optional(string)<br>    env        = optional(string)<br>    scope      = optional(string)<br>    attributes = optional(list(string))<br>    tags       = optional(map(string))<br>  })</pre> | n/a | yes |
 | <a name="input_enable_lifecycle_rules"></a> [enable\_lifecycle\_rules](#input\_enable\_lifecycle\_rules) | Whether to enable the default S3 lifecycle rules for noncurrent version tiering and cleanup | `bool` | `true` | no |
-| <a name="input_enable_replication"></a> [enable\_replication](#input\_enable\_replication) | This enables replication to a secondary region | `bool` | `false` | no |
 | <a name="input_force_destroy"></a> [force\_destroy](#input\_force\_destroy) | Allow the S3 bucket to be destroyed. By default we do not want to allow this | `bool` | `false` | no |
 | <a name="input_kms_key_id"></a> [kms\_key\_id](#input\_kms\_key\_id) | KMS key ARN for S3 encryption. If null, the default aws/s3 KMS key is used when sse\_algorithm is aws:kms | `string` | `null` | no |
 | <a name="input_sse_algorithm"></a> [sse\_algorithm](#input\_sse\_algorithm) | Server-side encryption algorithm for S3. Use 'aws:kms' for KMS or 'AES256' for S3-managed keys | `string` | `"aws:kms"` | no |
@@ -210,6 +190,4 @@ module "primary-tfstate-backend" {
 | <a name="output_enabled"></a> [enabled](#output\_enabled) | Whether the module is enabled |
 | <a name="output_primary_s3_arn"></a> [primary\_s3\_arn](#output\_primary\_s3\_arn) | The ARN of the primary S3 bucket |
 | <a name="output_primary_s3_bucket"></a> [primary\_s3\_bucket](#output\_primary\_s3\_bucket) | The name of the primary S3 bucket for storing Terraform state |
-| <a name="output_secondary_s3_arn"></a> [secondary\_s3\_arn](#output\_secondary\_s3\_arn) | The ARN of the secondary (replica) S3 bucket, empty if replication is disabled |
-| <a name="output_secondary_s3_bucket"></a> [secondary\_s3\_bucket](#output\_secondary\_s3\_bucket) | The name of the secondary (replica) S3 bucket, empty if replication is disabled |
 <!-- END_TF_DOCS -->
