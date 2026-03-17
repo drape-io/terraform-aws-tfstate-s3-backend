@@ -8,7 +8,7 @@ locals {
     "  backend \"s3\" {",
     "    bucket         = \"${module.primary_s3.bucket}\"",
     "    key            = \"terraform.tfstate\"",
-    "    region         = \"${data.aws_region.current.name}\"",
+    "    region         = \"${data.aws_region.current.id}\"",
     "    dynamodb_table = \"${one(aws_dynamodb_table.default[*]).name}\"",
     "    encrypt        = true",
     "  }",
