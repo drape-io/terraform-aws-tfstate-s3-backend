@@ -15,17 +15,21 @@ fmt:
 fmt-check:
     terraform fmt -check -recursive
 
-# Validate root and submodules
+# Validate the root module, the s3 module, and (through the full example) the replication module
 validate:
     terraform init -backend=false
     terraform validate
     terraform -chdir=modules/s3 init -backend=false
     terraform -chdir=modules/s3 validate
+    terraform -chdir=examples/full init -backend=false
+    terraform -chdir=examples/full validate
 
 # Run the tests (requires LocalStack running)
 test:
     terraform -chdir=./modules/s3 init
     terraform -chdir=./modules/s3 test
+    terraform -chdir=./modules/replication init
+    terraform -chdir=./modules/replication test
     terraform init
     terraform test
 

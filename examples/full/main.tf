@@ -11,16 +11,24 @@ locals {
 }
 
 module "full" {
-  source             = "../../"
-  context            = local.context
-  force_destroy      = true
-  enable_replication = true
+  source        = "../../"
+  context       = local.context
+  force_destroy = true
+}
+
+module "full_replication" {
+  source              = "../../modules/replication"
+  context             = local.context
+  force_destroy       = true
+  primary_bucket_name = module.full.primary_s3_bucket
+  primary_bucket_arn  = module.full.primary_s3_arn
   providers = {
+    aws           = aws
     aws.secondary = aws.secondary
   }
 }
 
-module "secondary" {
+module "prd" {
   source        = "../../"
   force_destroy = true
   context = merge(
@@ -29,7 +37,4 @@ module "secondary" {
       env = "prd"
     }
   )
-  providers = {
-    aws.secondary = aws.secondary
-  }
 }

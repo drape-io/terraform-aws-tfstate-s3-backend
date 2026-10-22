@@ -58,6 +58,11 @@ run "test_s3_apply" {
     condition     = output.arn != ""
     error_message = "S3 bucket ARN should not be empty"
   }
+
+  assert {
+    condition     = strcontains(aws_s3_bucket_policy.tls_only[0].policy, "aws:SecureTransport")
+    error_message = "S3 bucket should deny requests that don't use TLS"
+  }
 }
 
 run "test_s3_encryption" {
@@ -68,15 +73,12 @@ run "test_s3_encryption" {
 
   assert {
     condition     = one(one(aws_s3_bucket_server_side_encryption_configuration.default[0].rule).apply_server_side_encryption_by_default).sse_algorithm == "aws:kms"
-    error_message = "S3 bucket should default to KMS encryption"
+    error_message = "S3 bucket should allow KMS encryption"
   }
 }
 
 run "test_s3_encryption_custom" {
   command = plan
-  variables {
-    sse_algorithm = "AES256"
-  }
 
   assert {
     condition     = one(one(aws_s3_bucket_server_side_encryption_configuration.default[0].rule).apply_server_side_encryption_by_default).sse_algorithm == "AES256"
@@ -115,4 +117,26 @@ run "test_s3_versioning_enabled" {
     condition     = aws_s3_bucket_versioning.default[0].versioning_configuration[0].status == "Enabled"
     error_message = "S3 bucket versioning should be enabled"
   }
+}
+
+run "test_s3_bucket_name_is_lowercase" {
+  command = plan
+  variables {
+    id = "Drape-Dev"
+  }
+
+  assert {
+    condition     = aws_s3_bucket.default[0].bucket == "drape-dev-tfstate"
+    error_message = "S3 bucket name should be lowercase"
+  }
+}
+
+run "test_s3_kms_key_requires_kms_algorithm" {
+  command = plan
+  variables {
+    sse_algorithm = "AES256"
+    kms_key_id    = "arn:aws:kms:us-east-1:111122223333:key/00000000-0000-0000-0000-000000000000"
+  }
+
+  expect_failures = [aws_s3_bucket_server_side_encryption_configuration.default]
 }

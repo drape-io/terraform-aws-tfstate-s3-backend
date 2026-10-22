@@ -8,10 +8,17 @@ variable "context" {
     attributes = optional(list(string))
     tags       = optional(map(string))
   })
-  description = <<-EOT
-    Used to pass an object of any of the variables used to this module.  It is
-    used to seed the module with labels from another context.
-  EOT
+  description = "Labels from another context, used to seed this module's naming and tags"
+
+  validation {
+    condition = alltrue([
+      for part in concat(
+        [var.context.group, var.context.tenant, var.context.env, var.context.scope],
+        var.context.attributes == null ? [] : var.context.attributes,
+      ) : part == null || can(regex("^[a-z0-9-]*$", part))
+    ])
+    error_message = "The context group, tenant, env, scope and attributes may contain only lowercase letters, numbers and hyphens, because they form the S3 bucket name."
+  }
 }
 
 variable "primary_bucket_name" {

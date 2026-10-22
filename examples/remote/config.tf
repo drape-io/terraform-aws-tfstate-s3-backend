@@ -21,6 +21,7 @@ terraform {
   backend "s3" {
     bucket                      = "drape-customer1-dev-k8s-tfstate"
     key                         = "app1"
+    dynamodb_table              = "drape-customer1-dev-k8s-tfstate"
     region                      = "us-east-1"
     use_path_style              = true
     skip_credentials_validation = true

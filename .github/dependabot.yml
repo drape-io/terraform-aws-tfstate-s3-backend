@@ -1,14 +1,27 @@
 version: 2
 updates:
   - package-ecosystem: "terraform"
-    directory: "/"
+    directories:
+      - "/"
+      - "/modules/*"
+      - "/examples/*"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        patterns:
+          - "*"
   - package-ecosystem: "docker-compose"
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
+    cooldown:
+      default-days: 7

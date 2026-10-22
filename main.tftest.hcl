@@ -45,10 +45,6 @@ run "test_dynamo_deletion_protection_disabled_with_force_destroy" {
   command = plan
   variables {
     force_destroy = true
-    context = {
-      group = "drape"
-      env   = "dev"
-    }
   }
 
   assert {
@@ -76,10 +72,6 @@ run "test_dynamo_enabled_works" {
 run "test_apply_finishes" {
   variables {
     force_destroy = true
-    context = {
-      group = "drape"
-      env   = "dev"
-    }
   }
 
   assert {
@@ -106,4 +98,85 @@ run "test_apply_finishes" {
     condition     = strcontains(output.backend_config, "drape-dev-tfstate")
     error_message = "backend_config should contain the bucket name"
   }
+
+  assert {
+    condition     = strcontains(output.backend_config, "region         = \"us-east-1\"")
+    error_message = "backend_config should contain the bucket's region"
+  }
+}
+
+# Short ids must keep the names that existing state buckets and tables use.
+run "test_sbx_table_name_unchanged" {
+  command = plan
+  variables {
+    context = {
+      group = "sontek"
+      env   = "sbx"
+    }
+  }
+
+  assert {
+    condition     = aws_dynamodb_table.default[0].name == "sontek-sbx-tfstate"
+    error_message = "Short id table name changed"
+  }
+}
+
+run "test_short_id_names_unchanged" {
+  variables {
+    force_destroy = true
+    context = {
+      group      = "drp"
+      env        = "mgmt"
+      attributes = ["bootstrap"]
+    }
+  }
+
+  assert {
+    condition     = output.primary_s3_bucket == "drp-mgmt-bootstrap-tfstate"
+    error_message = "Short id bucket name changed"
+  }
+
+  assert {
+    condition     = output.dynamo_table == "drp-mgmt-bootstrap-tfstate"
+    error_message = "Short id table name changed"
+  }
+}
+
+run "test_long_id_is_shortened_with_hash" {
+  variables {
+    force_destroy = true
+    context = {
+      group  = "averyveryverylonggroupname"
+      tenant = "anotherlongtenantname"
+      env    = "production"
+      scope  = "kubernetes-cluster"
+    }
+  }
+
+  assert {
+    condition     = length(output.primary_s3_bucket) <= 63 && endswith(output.primary_s3_bucket, "-tfstate")
+    error_message = "Long id bucket name must fit in 63 characters and keep the -tfstate suffix"
+  }
+
+  assert {
+    condition     = output.primary_s3_bucket == lower(output.primary_s3_bucket)
+    error_message = "Bucket name must be lowercase"
+  }
+
+  assert {
+    condition     = output.dynamo_table == output.primary_s3_bucket
+    error_message = "Table and bucket names should match"
+  }
+}
+
+run "test_context_rejects_invalid_characters" {
+  command = plan
+  variables {
+    context = {
+      group = "Drape"
+      env   = "dev"
+    }
+  }
+
+  expect_failures = [var.context]
 }

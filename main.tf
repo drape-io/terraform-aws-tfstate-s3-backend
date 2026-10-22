@@ -1,15 +1,9 @@
-data "aws_region" "current" {}
-
 module "context" {
-  source  = "drape-io/context/null"
-  version = "~> 0.0.8"
-  # We override the max_id_length to guarantee to that we aren't larger than
-  # available s3 bucket limits.
-  context = merge(
-    var.context, {
-      max_id_length = 63
-    }
-  )
+  source  = "git::https://github.com/drape-io/terraform-null-context.git?ref=v1.0.0"
+  context = var.context
+  # S3 bucket names are limited to 63 characters. Leave room for the
+  # "-tfstate" suffix so a long id is shortened with a hash, not cut off.
+  max_id_length = 55
 }
 
 module "primary_s3" {
