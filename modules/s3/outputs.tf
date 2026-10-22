@@ -9,3 +9,8 @@ output "arn" {
   description = "The ARN of the S3 bucket"
   value       = local.enabled ? one(aws_s3_bucket.default[*]).arn : ""
 }
+
+output "region" {
+  description = "The region the S3 bucket lives in"
+  value       = local.enabled ? one(aws_s3_bucket.default[*]).region : ""
+}

@@ -106,4 +106,9 @@ run "test_apply_finishes" {
     condition     = strcontains(output.backend_config, "drape-dev-tfstate")
     error_message = "backend_config should contain the bucket name"
   }
+
+  assert {
+    condition     = strcontains(output.backend_config, "region         = \"us-east-1\"")
+    error_message = "backend_config should contain the bucket's region"
+  }
 }

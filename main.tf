@@ -1,5 +1,3 @@
-data "aws_region" "current" {}
-
 module "context" {
   source  = "drape-io/context/null"
   version = "~> 0.0.8"
