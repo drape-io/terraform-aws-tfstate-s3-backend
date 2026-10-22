@@ -1,8 +1,7 @@
 data "aws_partition" "current" {}
 
 module "context" {
-  source  = "drape-io/context/null"
-  version = "~> 0.0.8"
+  source  = "git::https://github.com/drape-io/terraform-null-context.git?ref=v1.0.0"
   context = var.context
 }
 
@@ -12,8 +11,7 @@ locals {
 }
 
 module "secondary_context" {
-  source  = "drape-io/context/null"
-  version = "~> 0.0.8"
+  source = "git::https://github.com/drape-io/terraform-null-context.git?ref=v1.0.0"
   context = merge(
     local.context,
     {
@@ -25,8 +23,7 @@ module "secondary_context" {
 }
 
 module "replication_context" {
-  source  = "drape-io/context/null"
-  version = "~> 0.0.8"
+  source = "git::https://github.com/drape-io/terraform-null-context.git?ref=v1.0.0"
   context = merge(
     local.context,
     {
@@ -40,7 +37,7 @@ module "replication_context" {
 module "secondary_s3" {
   source                 = "../s3"
   enabled                = local.enabled
-  id                     = lower(module.secondary_context.id_truncated_hash)
+  id                     = module.secondary_context.id_truncated_hash
   tags                   = module.secondary_context.tags
   state_suffix           = "tfstate"
   force_destroy          = var.force_destroy

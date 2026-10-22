@@ -106,6 +106,21 @@ run "test_apply_finishes" {
 }
 
 # Short ids must keep the names that existing state buckets and tables use.
+run "test_sbx_table_name_unchanged" {
+  command = plan
+  variables {
+    context = {
+      group = "sontek"
+      env   = "sbx"
+    }
+  }
+
+  assert {
+    condition     = aws_dynamodb_table.default[0].name == "sontek-sbx-tfstate"
+    error_message = "Short id table name changed"
+  }
+}
+
 run "test_short_id_names_unchanged" {
   variables {
     force_destroy = true

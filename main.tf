@@ -1,6 +1,5 @@
 module "context" {
-  source  = "drape-io/context/null"
-  version = "~> 0.0.8"
+  source  = "git::https://github.com/drape-io/terraform-null-context.git?ref=v1.0.0"
   context = var.context
   # S3 bucket names are limited to 63 characters. Leave room for the
   # "-tfstate" suffix so a long id is shortened with a hash, not cut off.
@@ -10,7 +9,7 @@ module "context" {
 module "primary_s3" {
   source                 = "./modules/s3"
   enabled                = local.enabled
-  id                     = local.id
+  id                     = module.context.id_truncated_hash
   tags                   = module.context.tags
   state_suffix           = local.state_suffix
   force_destroy          = var.force_destroy
