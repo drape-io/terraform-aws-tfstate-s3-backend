@@ -6,12 +6,17 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   validate:
     name: Validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - uses: hashicorp/setup-terraform@v4
         with:
@@ -21,21 +26,24 @@ jobs:
         run: terraform fmt -check -recursive
 
       - name: Terraform Init
-        run: |
-          printf 'provider "aws" {\nregion = "us-east-1"\nskip_credentials_validation = true\nskip_metadata_api_check = true\nskip_requesting_account_id = true\n}\nprovider "aws" {\nalias = "secondary"\nregion = "us-west-2"\nskip_credentials_validation = true\nskip_metadata_api_check = true\nskip_requesting_account_id = true\n}\n' > ci_providers.tf
-          terraform init -backend=false
+        run: terraform init -backend=false
 
       - name: Terraform Validate
         run: terraform validate
-
-      - name: Cleanup CI override
-        run: rm -f ci_providers.tf
 
       - name: Terraform Init (s3 module)
         run: terraform -chdir=modules/s3 init -backend=false
 
       - name: Terraform Validate (s3 module)
         run: terraform -chdir=modules/s3 validate
+
+      # The replication module needs an aws.secondary provider passed in, so
+      # validate it through the full example, which also covers the example.
+      - name: Terraform Init (full example)
+        run: terraform -chdir=examples/full init -backend=false
+
+      - name: Terraform Validate (full example)
+        run: terraform -chdir=examples/full validate
 
   test:
     name: Test
@@ -53,6 +61,8 @@ jobs:
       AWS_DEFAULT_REGION: us-east-1
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - uses: hashicorp/setup-terraform@v4
         with:
@@ -62,6 +72,11 @@ jobs:
         run: |
           terraform -chdir=modules/s3 init
           terraform -chdir=modules/s3 test
+
+      - name: Test Replication Module
+        run: |
+          terraform -chdir=modules/replication init
+          terraform -chdir=modules/replication test
 
       - name: Test Root Module
         run: |
