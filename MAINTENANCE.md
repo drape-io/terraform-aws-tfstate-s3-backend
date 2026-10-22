@@ -1,42 +1,52 @@
-# Releasing a new version:
+# Releasing a new version
 
-```
-git tag -a v0.0.1 -m "Release v0.0.1"
-git push origin v0.0.1
+Tag the release and push the tag:
+
+```bash
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
 ```
 
 # Development
-We've included a `docker-compose.yml` file that will spin up LocalStack(https://www.localstack.cloud/)
-and allow you to target that.
+The tests run against [LocalStack](https://www.localstack.cloud/). The
+`docker-compose.yml` file starts it.
 
-First, activate the `.envrc` file so you have the right AWS settings:
+1. Load the AWS settings from `.envrc`:
 
 ```bash
 source .envrc
 ```
 
-Then run docker:
+2. Start LocalStack:
 
 ```bash
-docker compose up
+just localstack-up
 ```
 
-## Unit Testing
+## Testing
+Validate the root module, the s3 module and the full example:
+
 ```bash
-tf test
+just validate
+```
+
+Run the tests for the s3 module, the replication module and the root module:
+
+```bash
+just test
 ```
 
 ## Integration Testing
 
-You can verify everything is working with:
+To list the tables and buckets in LocalStack:
 
-```
-aws dynamodb list-tables --endpoint-url=http://localhost:4566
-aws s3 ls --endpoint-url=http://localhost:4566
+```bash
+just list-dynamo
+just list-s3
 ```
 
-To manually clear out a lock table:
+To delete a lock table by hand:
 
-```
+```bash
 aws dynamodb delete-table --endpoint-url=http://localhost:4566 --table-name drape-customer1-dev-k8s-tfstate
 ```
