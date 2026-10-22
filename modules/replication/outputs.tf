@@ -10,5 +10,5 @@ output "secondary_s3_arn" {
 
 output "replication_role_arn" {
   description = "The ARN of the IAM role used for S3 replication"
-  value       = aws_iam_role.replication.arn
+  value       = local.enabled ? aws_iam_role.replication[0].arn : ""
 }

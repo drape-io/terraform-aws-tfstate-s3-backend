@@ -45,35 +45,54 @@ run "test_replication_plan" {
   command = plan
 
   assert {
-    condition     = module.secondary_s3.bucket != ""
-    error_message = "Secondary S3 bucket should be created"
-  }
-
-  assert {
-    condition     = aws_iam_role.replication.name != ""
+    condition     = aws_iam_role.replication[0].name == "drape-dev-s3-replication"
     error_message = "Replication IAM role should be created"
   }
 
   assert {
-    condition     = aws_s3_bucket_replication_configuration.replication.bucket == "drape-dev-tfstate"
+    condition     = aws_s3_bucket_replication_configuration.replication[0].bucket == "drape-dev-tfstate"
     error_message = "Replication should target the primary bucket"
+  }
+}
+
+run "test_replication_disabled" {
+  command = plan
+  variables {
+    context = {
+      enabled = false
+      group   = "drape"
+      env     = "dev"
+    }
+  }
+
+  assert {
+    condition     = length(aws_iam_role.replication) == 0 && length(aws_s3_bucket_replication_configuration.replication) == 0
+    error_message = "Replication resources were created when we weren't enabled"
+  }
+}
+
+# Replication needs a real, versioned source bucket.
+run "setup_primary_bucket" {
+  module {
+    source = "../s3"
+  }
+
+  variables {
+    id            = "drape-dev"
+    force_destroy = true
   }
 }
 
 run "test_replication_apply" {
   variables {
     force_destroy       = true
-    primary_bucket_name = "drape-dev-tfstate"
-    primary_bucket_arn  = "arn:aws:s3:::drape-dev-tfstate"
-    context = {
-      group = "drape"
-      env   = "dev"
-    }
+    primary_bucket_name = run.setup_primary_bucket.bucket
+    primary_bucket_arn  = run.setup_primary_bucket.arn
   }
 
   assert {
-    condition     = output.secondary_s3_bucket != ""
-    error_message = "Secondary bucket output should not be empty"
+    condition     = output.secondary_s3_bucket == "drape-dev-replica-tfstate"
+    error_message = "Secondary bucket should be named after the replica context"
   }
 
   assert {

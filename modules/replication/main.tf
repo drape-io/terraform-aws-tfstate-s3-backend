@@ -36,6 +36,8 @@ module "replication_context" {
       attributes = concat(local.context.attributes, ["s3-replication"]),
     }
   )
+  # IAM role names are limited to 64 characters.
+  max_id_length = 64
 }
 
 module "secondary_s3" {
@@ -55,6 +57,8 @@ module "secondary_s3" {
 }
 
 data "aws_iam_policy_document" "replication_assume_role" {
+  count = local.enabled ? 1 : 0
+
   statement {
     effect  = "Allow"
     actions = ["sts:AssumeRole"]
@@ -67,12 +71,15 @@ data "aws_iam_policy_document" "replication_assume_role" {
 }
 
 resource "aws_iam_role" "replication" {
+  count              = local.enabled ? 1 : 0
   name               = module.replication_context.id_truncated_hash
-  assume_role_policy = data.aws_iam_policy_document.replication_assume_role.json
+  assume_role_policy = data.aws_iam_policy_document.replication_assume_role[0].json
   tags               = module.replication_context.tags
 }
 
 data "aws_iam_policy_document" "replication" {
+  count = local.enabled ? 1 : 0
+
   statement {
     effect = "Allow"
     actions = [
@@ -102,19 +109,26 @@ data "aws_iam_policy_document" "replication" {
 }
 
 resource "aws_iam_policy" "replication" {
+  count  = local.enabled ? 1 : 0
   name   = module.replication_context.id_full
-  policy = data.aws_iam_policy_document.replication.json
+  policy = data.aws_iam_policy_document.replication[0].json
   tags   = module.replication_context.tags
 }
 
 resource "aws_iam_role_policy_attachment" "replication" {
-  role       = aws_iam_role.replication.name
-  policy_arn = aws_iam_policy.replication.arn
+  count      = local.enabled ? 1 : 0
+  role       = aws_iam_role.replication[0].name
+  policy_arn = aws_iam_policy.replication[0].arn
 }
 
 resource "aws_s3_bucket_replication_configuration" "replication" {
-  role   = aws_iam_role.replication.arn
+  count  = local.enabled ? 1 : 0
+  role   = aws_iam_role.replication[0].arn
   bucket = var.primary_bucket_name
+
+  # The destination bucket must have versioning enabled before replication
+  # can be configured, and the arn output doesn't wait for it.
+  depends_on = [module.secondary_s3]
 
   rule {
     id     = module.replication_context.id_full
@@ -125,4 +139,24 @@ resource "aws_s3_bucket_replication_configuration" "replication" {
       storage_class = "STANDARD"
     }
   }
+}
+
+moved {
+  from = aws_iam_role.replication
+  to   = aws_iam_role.replication[0]
+}
+
+moved {
+  from = aws_iam_policy.replication
+  to   = aws_iam_policy.replication[0]
+}
+
+moved {
+  from = aws_iam_role_policy_attachment.replication
+  to   = aws_iam_role_policy_attachment.replication[0]
+}
+
+moved {
+  from = aws_s3_bucket_replication_configuration.replication
+  to   = aws_s3_bucket_replication_configuration.replication[0]
 }
