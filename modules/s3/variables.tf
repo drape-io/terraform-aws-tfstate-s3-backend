@@ -23,7 +23,7 @@ variable "state_suffix" {
 
 variable "force_destroy" {
   type        = bool
-  description = "Allow the S3 bucket to be destroyed. By default we do not want to allow this"
+  description = "Allow the S3 bucket to be destroyed"
   default     = false
 }
 

@@ -8,10 +8,7 @@ variable "context" {
     attributes = optional(list(string))
     tags       = optional(map(string))
   })
-  description = <<-EOT
-    Used to pass an object of any of the variables used to this module.  It is
-    used to seed the module with labels from another context.
-  EOT
+  description = "Labels from another context, used to seed this module's naming and tags"
 }
 
 variable "primary_bucket_name" {

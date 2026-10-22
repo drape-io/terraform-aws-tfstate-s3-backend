@@ -1,5 +1,4 @@
-# This was copied from `drape-io/terraform-null-context` since it'll be passed
-# along to it.
+# Mirrors the context input of drape-io/context/null, which it is passed to.
 variable "context" {
   type = object({
     enabled    = optional(bool)
@@ -10,15 +9,12 @@ variable "context" {
     attributes = optional(list(string))
     tags       = optional(map(string))
   })
-  description = <<-EOT
-    Used to pass an object of any of the variables used to this module.  It is
-    used to seed the module with labels from another context.
-  EOT
+  description = "Labels from another context, used to seed this module's naming and tags"
 }
 
 variable "force_destroy" {
   type        = bool
-  description = "Allow the S3 bucket to be destroyed. By default we do not want to allow this"
+  description = "Allow the S3 bucket to be destroyed and turn off deletion protection on the DynamoDB lock table"
   default     = false
 }
 
