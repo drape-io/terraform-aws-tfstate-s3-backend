@@ -1,19 +1,16 @@
 module "context" {
   source  = "drape-io/context/null"
   version = "~> 0.0.8"
-  # We override the max_id_length to guarantee to that we aren't larger than
-  # available s3 bucket limits.
-  context = merge(
-    var.context, {
-      max_id_length = 63
-    }
-  )
+  context = var.context
+  # S3 bucket names are limited to 63 characters. Leave room for the
+  # "-tfstate" suffix so a long id is shortened with a hash, not cut off.
+  max_id_length = 55
 }
 
 module "primary_s3" {
   source                 = "./modules/s3"
   enabled                = local.enabled
-  id                     = module.context.id_truncated_hash
+  id                     = local.id
   tags                   = module.context.tags
   state_suffix           = local.state_suffix
   force_destroy          = var.force_destroy

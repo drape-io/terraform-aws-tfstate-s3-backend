@@ -105,3 +105,16 @@ run "test_replication_apply" {
     error_message = "Replication role ARN output should not be empty"
   }
 }
+
+run "test_replication_context_rejects_invalid_characters" {
+  command = plan
+  variables {
+    context = {
+      group      = "drape"
+      env        = "dev"
+      attributes = ["not_valid"]
+    }
+  }
+
+  expect_failures = [var.context]
+}

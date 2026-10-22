@@ -3,11 +3,7 @@ data "aws_partition" "current" {}
 module "context" {
   source  = "drape-io/context/null"
   version = "~> 0.0.8"
-  context = merge(
-    var.context, {
-      max_id_length = 63
-    }
-  )
+  context = var.context
 }
 
 locals {
@@ -21,10 +17,11 @@ module "secondary_context" {
   context = merge(
     local.context,
     {
-      attributes    = concat(local.context.attributes, ["replica"]),
-      max_id_length = 63
+      attributes = concat(local.context.attributes, ["replica"]),
     }
   )
+  # Leave room for the "-tfstate" suffix in the 63 character bucket name.
+  max_id_length = 55
 }
 
 module "replication_context" {
@@ -43,7 +40,7 @@ module "replication_context" {
 module "secondary_s3" {
   source                 = "../s3"
   enabled                = local.enabled
-  id                     = module.secondary_context.id_truncated_hash
+  id                     = lower(module.secondary_context.id_truncated_hash)
   tags                   = module.secondary_context.tags
   state_suffix           = "tfstate"
   force_destroy          = var.force_destroy

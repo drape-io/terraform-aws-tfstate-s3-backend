@@ -1,5 +1,8 @@
 locals {
-  enabled      = module.context.context.enabled
+  enabled = module.context.context.enabled
+  # The hash in a shortened id can contain uppercase letters, which S3 bucket
+  # names don't allow.
+  id           = lower(module.context.id_truncated_hash)
   state_suffix = "tfstate"
 
   backend_config = local.enabled ? join("\n", [
