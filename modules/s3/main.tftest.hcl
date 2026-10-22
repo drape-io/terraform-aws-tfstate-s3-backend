@@ -68,7 +68,7 @@ run "test_s3_encryption" {
 
   assert {
     condition     = one(one(aws_s3_bucket_server_side_encryption_configuration.default[0].rule).apply_server_side_encryption_by_default).sse_algorithm == "aws:kms"
-    error_message = "S3 bucket should default to KMS encryption"
+    error_message = "S3 bucket should allow KMS encryption"
   }
 }
 
