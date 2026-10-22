@@ -74,9 +74,6 @@ run "test_s3_encryption" {
 
 run "test_s3_encryption_custom" {
   command = plan
-  variables {
-    sse_algorithm = "AES256"
-  }
 
   assert {
     condition     = one(one(aws_s3_bucket_server_side_encryption_configuration.default[0].rule).apply_server_side_encryption_by_default).sse_algorithm == "AES256"

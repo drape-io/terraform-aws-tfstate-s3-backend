@@ -45,10 +45,6 @@ run "test_dynamo_deletion_protection_disabled_with_force_destroy" {
   command = plan
   variables {
     force_destroy = true
-    context = {
-      group = "drape"
-      env   = "dev"
-    }
   }
 
   assert {
@@ -76,10 +72,6 @@ run "test_dynamo_enabled_works" {
 run "test_apply_finishes" {
   variables {
     force_destroy = true
-    context = {
-      group = "drape"
-      env   = "dev"
-    }
   }
 
   assert {

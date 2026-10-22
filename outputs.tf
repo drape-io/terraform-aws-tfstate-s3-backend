@@ -1,11 +1,11 @@
 output "primary_s3_bucket" {
   description = "The name of the primary S3 bucket for storing Terraform state"
-  value       = local.enabled ? module.primary_s3.bucket : ""
+  value       = module.primary_s3.bucket
 }
 
 output "primary_s3_arn" {
   description = "The ARN of the primary S3 bucket"
-  value       = local.enabled ? module.primary_s3.arn : ""
+  value       = module.primary_s3.arn
 }
 
 output "dynamo_table" {

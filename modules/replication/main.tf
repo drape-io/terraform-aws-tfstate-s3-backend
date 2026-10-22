@@ -11,8 +11,8 @@ module "context" {
 }
 
 locals {
-  enabled = module.context.context.enabled
   context = module.context.context
+  enabled = local.context.enabled
 }
 
 module "secondary_context" {

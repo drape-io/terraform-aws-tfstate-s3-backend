@@ -1,12 +1,12 @@
 resource "aws_s3_bucket" "default" {
-  count         = local.enabled ? 1 : 0
+  count         = var.enabled ? 1 : 0
   bucket        = substr(format("%s-%s", var.id, var.state_suffix), 0, 63)
   force_destroy = var.force_destroy
   tags          = var.tags
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "default" {
-  count  = local.enabled ? 1 : 0
+  count  = var.enabled ? 1 : 0
   bucket = aws_s3_bucket.default[0].id
 
   rule {
@@ -18,7 +18,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "default" {
 }
 
 resource "aws_s3_bucket_versioning" "default" {
-  count  = local.enabled ? 1 : 0
+  count  = var.enabled ? 1 : 0
   bucket = aws_s3_bucket.default[0].id
 
   versioning_configuration {
@@ -28,7 +28,7 @@ resource "aws_s3_bucket_versioning" "default" {
 
 # https://docs.aws.amazon.com/AmazonS3/latest/userguide/security-best-practices.html
 resource "aws_s3_bucket_public_access_block" "default" {
-  count                   = local.enabled ? 1 : 0
+  count                   = var.enabled ? 1 : 0
   bucket                  = aws_s3_bucket.default[0].id
   block_public_acls       = true
   ignore_public_acls      = true
@@ -37,7 +37,7 @@ resource "aws_s3_bucket_public_access_block" "default" {
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "default" {
-  count      = local.enabled && var.enable_lifecycle_rules ? 1 : 0
+  count      = var.enabled && var.enable_lifecycle_rules ? 1 : 0
   depends_on = [aws_s3_bucket_versioning.default]
 
   bucket = aws_s3_bucket.default[0].id
