@@ -150,6 +150,94 @@ same versioning, public access block and lifecycle rules as the primary
 bucket. Its encryption comes from the submodule's `sse_algorithm` and
 `kms_key_id` inputs.
 
+# Naming
+
+The bucket and the lock table are named `<id>-tfstate`, where `<id>` joins the
+context fields. The `group`, `tenant`, `env`, `scope` and `attributes` fields
+can contain only lowercase letters, numbers and hyphens.
+
+S3 bucket names have a limit of 63 characters. If the id is longer than 55
+characters, the module shortens it and adds a hash of the full id, so the name
+fits and stays unique.
+
+# Upgrading from 0.0.x
+
+Version 1.0.0 changes some resources. Read this section before you apply it
+to an existing backend.
+
+## Changes to existing resources
+
+- The default `sse_algorithm` changes from `AES256` to `aws:kms`, with the
+  AWS managed `aws/s3` key. Terraform updates the bucket in place. New objects
+  use KMS. Principals in other accounts cannot decrypt objects that use the
+  AWS managed key. To keep the old behavior, set `sse_algorithm = "AES256"`.
+- The DynamoDB lock table gets deletion protection, unless
+  `force_destroy = true`.
+- Each bucket gets a bucket policy that denies requests not made over TLS.
+  A bucket has only one policy, so this replaces any policy that the bucket
+  has now.
+- The lifecycle rules get an empty `filter`. This is an in-place update.
+- The `environment` tag of an `env` code expands to its full name. For
+  example, `sbx` becomes `sandbox`. Tags generated from the context now
+  override tags with the same key in `context.tags`. Terraform updates the
+  tags in place.
+- Names of ids up to 55 characters do not change. Longer ids get new bucket
+  and table names, so Terraform replaces those resources.
+- The `random_string` resources of the context module leave the state. No
+  cloud resource changes.
+- The module needs Terraform 1.6 or later and AWS provider 5.0 or later.
+
+## Replication
+
+Replication moved from the `enable_replication` variable to the
+`modules/replication` submodule. Call the submodule as shown in
+[Replication](#replication). Then add these blocks to the root module that
+calls both modules. The `removed` blocks need Terraform 1.7 or later.
+
+```hcl
+moved {
+  from = module.tfstate-backend.aws_iam_role.replication[0]
+  to   = module.tfstate-replication.aws_iam_role.replication
+}
+
+moved {
+  from = module.tfstate-backend.aws_iam_policy.replication[0]
+  to   = module.tfstate-replication.aws_iam_policy.replication
+}
+
+moved {
+  from = module.tfstate-backend.aws_s3_bucket_replication_configuration.replication[0]
+  to   = module.tfstate-replication.aws_s3_bucket_replication_configuration.replication
+}
+
+# The policy attachment changes resource type. Keep the old attachment in AWS.
+# If Terraform destroys it, it can detach the policy that the new attachment
+# just attached.
+removed {
+  from = module.tfstate-backend.aws_iam_policy_attachment.replication
+  lifecycle {
+    destroy = false
+  }
+}
+
+# The replica bucket name changes from <id>-2-tfstate to
+# <id>-replica-tfstate. Keep the old replica bucket in AWS.
+removed {
+  from = module.tfstate-backend.module.secondary_s3
+  lifecycle {
+    destroy = false
+  }
+}
+```
+
+The `moved` blocks point at the addresses without `[0]`. The submodule moves
+them to `[0]` itself.
+
+Terraform creates a new, empty replica bucket. S3 replicates only the objects
+that are written after replication is configured. To copy the existing state
+objects to the new replica, use S3 Batch Replication. After that, you can
+delete the old replica bucket.
+
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
@@ -168,7 +256,7 @@ bucket. Its encryption comes from the submodule's `sse_algorithm` and
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_context"></a> [context](#module\_context) | drape-io/context/null | ~> 0.0.8 |
+| <a name="module_context"></a> [context](#module\_context) | git::https://github.com/drape-io/terraform-null-context.git | v1.0.0 |
 | <a name="module_primary_s3"></a> [primary\_s3](#module\_primary\_s3) | ./modules/s3 | n/a |
 
 ## Resources
